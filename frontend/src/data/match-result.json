@@ -1,0 +1,15 @@
+{
+  "score": 74,
+  "summary": "Your resume shows strong alignment with the technical requirements but has gaps in leadership experience and specific domain knowledge mentioned in the job description.",
+  "strengths": [
+    { "title": "Technical Skills Match", "description": "React, TypeScript, and Node.js experience aligns well with requirements.", "score": 92 },
+    { "title": "Years of Experience", "description": "Your 5+ years exceeds the 3-year minimum requirement.", "score": 88 },
+    { "title": "Education", "description": "BS in Computer Science matches the preferred qualification.", "score": 85 },
+    { "title": "Project Experience", "description": "Multiple full-stack projects demonstrate relevant hands-on experience.", "score": 78 }
+  ],
+  "weaknesses": [
+    { "title": "Leadership Experience", "description": "JD requires team lead experience; resume shows individual contributor roles only.", "score": 35 },
+    { "title": "Cloud Infrastructure", "description": "AWS/GCP certifications mentioned in JD are missing from resume.", "score": 40 },
+    { "title": "Domain Knowledge", "description": "FinTech experience is preferred but not evident in your background.", "score": 30 }
+  ]
+}

@@ -1,0 +1,34 @@
+[
+  {
+    "id": "1",
+    "title": "Senior Frontend Engineer",
+    "company": "TechCorp Inc.",
+    "savedAt": "2026-03-10",
+    "snippet": "We are looking for a Senior Frontend Engineer with 5+ years of experience in React, TypeScript...",
+    "content": "Senior Frontend Engineer at TechCorp Inc.\n\nRequirements:\n- 5+ years of experience with React and TypeScript\n- Experience with state management (Redux, Zustand)\n- Strong understanding of web performance optimization\n- Team lead experience preferred\n- AWS/GCP experience\n- FinTech domain knowledge is a plus",
+    "comparisons": [
+      { "resumeName": "John_Doe_Resume_2026.pdf", "score": 74, "comparedAt": "2026-03-10" },
+      { "resumeName": "Resume_v3_final.pdf", "score": 68, "comparedAt": "2026-03-09" }
+    ]
+  },
+  {
+    "id": "2",
+    "title": "Full Stack Developer",
+    "company": "StartupXYZ",
+    "savedAt": "2026-03-08",
+    "snippet": "Join our fast-growing team as a Full Stack Developer. Experience with React, Node.js, and PostgreSQL...",
+    "content": "Full Stack Developer at StartupXYZ\n\nRequirements:\n- 3+ years with React and Node.js\n- PostgreSQL or MongoDB experience\n- REST API design\n- CI/CD pipelines\n- Startup environment experience preferred",
+    "comparisons": [
+      { "resumeName": "John_Doe_Resume_2026.pdf", "score": 82, "comparedAt": "2026-03-08" }
+    ]
+  },
+  {
+    "id": "3",
+    "title": "React Native Developer",
+    "company": "MobileFirst Ltd.",
+    "savedAt": "2026-03-05",
+    "snippet": "Looking for a React Native developer to build cross-platform mobile applications...",
+    "content": "React Native Developer at MobileFirst Ltd.\n\nRequirements:\n- 3+ years React Native\n- iOS and Android deployment\n- Offline-first architecture\n- GraphQL experience",
+    "comparisons": []
+  }
+]

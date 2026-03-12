@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume & JD Matcher</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-semibold text-slate-800 mb-2">Resume & JD Matcher</h1>
+    <p class="text-slate-600 mb-6">Paste or upload a resume and a job description to get a fit score and explanation. Save JDs to rank multiple resumes best to worst.</p>
+
+    <form id="match-form" class="space-y-4">
+      <div>
+        <label for="resume" class="block text-sm font-medium text-slate-700 mb-1">Resume</label>
+        <p class="text-xs text-slate-500 mb-1">Paste text below or use the file upload.</p>
+        <textarea id="resume" name="resume" rows="6" class="w-full rounded border border-slate-300 p-2 text-sm"
+                  placeholder="Paste resume text here..."></textarea>
+        <input type="file" id="resume-file" name="resume_file" accept=".pdf,.txt" class="mt-2 text-sm">
+      </div>
+      <div>
+        <label for="jd-select" class="block text-sm font-medium text-slate-700 mb-1">Job description</label>
+        <p class="text-xs text-slate-500 mb-1">Choose a saved JD or paste below.</p>
+        <select id="jd-select" class="w-full rounded border border-slate-300 p-2 text-sm mb-2">
+          <option value="">-- Paste below or choose a saved JD --</option>
+        </select>
+        <textarea id="jd" name="jd" rows="6" class="w-full rounded border border-slate-300 p-2 text-sm"
+                  placeholder="Paste job description here..."></textarea>
+        <div class="mt-2 flex items-center gap-2 flex-wrap">
+          <input type="file" id="jd-file" name="jd_file" accept=".pdf,.txt" class="hidden">
+          <button type="button" id="jd-upload-btn" class="px-3 py-1.5 text-sm border border-slate-300 rounded hover:bg-slate-100">Upload JD (PDF or .txt)</button>
+          <span id="jd-file-name" class="text-sm text-slate-600"></span>
+        </div>
+        <div class="mt-2 flex items-center gap-2">
+          <input type="checkbox" id="save-jd" name="save_jd" class="rounded border-slate-300">
+          <label for="save-jd" class="text-sm text-slate-700">Save JD for future use to rank resumes</label>
+        </div>
+        <p id="jd-view-link" class="mt-1 text-sm hidden">
+          <a href="#" id="jd-view-a" target="_blank" rel="noopener" class="text-slate-600 underline hover:text-slate-800">View this JD</a>
+        </p>
+      </div>
+      <button type="submit" id="submit-btn"
+              class="px-4 py-2 bg-slate-800 text-white rounded hover:bg-slate-700 disabled:opacity-50">
+        Get match score
+      </button>
+    </form>
+
+    <div id="error" class="mt-4 p-3 rounded bg-red-50 text-red-700 text-sm hidden"></div>
+    <div id="result" class="mt-6 p-4 rounded border border-slate-200 bg-white hidden">
+      <h2 class="font-medium text-slate-800 mb-2">Result</h2>
+      <p class="text-slate-600"><span class="font-medium">Score:</span> <span id="score" class="text-lg font-semibold"></span> / 100</p>
+      <p class="text-slate-600 mt-2"><span class="font-medium">Explanation:</span></p>
+      <p id="explanation" class="mt-1 text-slate-700"></p>
+      <button type="button" id="recommendations-btn" class="mt-4 px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-500 text-sm">
+        Get recommendations to improve match
+      </button>
+    </div>
+    <div id="recommendations" class="mt-4 p-4 rounded border border-slate-200 bg-white hidden">
+      <h2 class="font-medium text-slate-800 mb-2">Recommendations</h2>
+      <ul id="recommendations-list" class="list-disc list-inside text-slate-700 space-y-1"></ul>
+      <p id="recommendations-loading" class="text-slate-500 text-sm hidden">Loading…</p>
+    </div>
+
+    <div id="rankings-section" class="mt-8 p-4 rounded border border-slate-200 bg-white hidden">
+      <h2 class="font-medium text-slate-800 mb-2">Resumes compared against this JD</h2>
+      <p class="text-slate-600 text-sm mb-3">Sorted best to worst. Click View to open the saved JD or resume in its original format.</p>
+      <div id="rankings-actions" class="mb-3">
+        <a href="#" id="rankings-view-jd-a" target="_blank" rel="noopener" class="text-sm text-slate-600 underline hover:text-slate-800">View this JD</a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+          <thead class="text-slate-600 border-b border-slate-200">
+            <tr>
+              <th class="py-2 pr-4">#</th>
+              <th class="py-2 pr-4">Resume</th>
+              <th class="py-2 pr-4">Score</th>
+              <th class="py-2 pr-4">Date</th>
+              <th class="py-2 pr-4">Explanation</th>
+              <th class="py-2">View</th>
+            </tr>
+          </thead>
+          <tbody id="rankings-body" class="text-slate-700">
+          </tbody>
+        </table>
+      </div>
+      <p id="rankings-empty" class="text-slate-500 text-sm hidden">No resumes compared yet for this JD.</p>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('match-form');
+    const resumeInput = document.getElementById('resume');
+    const resumeFile = document.getElementById('resume-file');
+    const jdSelect = document.getElementById('jd-select');
+    const jdInput = document.getElementById('jd');
+    const saveJdCheckbox = document.getElementById('save-jd');
+    const jdViewLink = document.getElementById('jd-view-link');
+    const jdViewA = document.getElementById('jd-view-a');
+    const submitBtn = document.getElementById('submit-btn');
+    const errorDiv = document.getElementById('error');
+    const resultDiv = document.getElementById('result');
+    const scoreEl = document.getElementById('score');
+    const explanationEl = document.getElementById('explanation');
+    const rankingsSection = document.getElementById('rankings-section');
+    const rankingsBody = document.getElementById('rankings-body');
+    const rankingsEmpty = document.getElementById('rankings-empty');
+    const rankingsViewJdA = document.getElementById('rankings-view-jd-a');
+    const jdUploadBtn = document.getElementById('jd-upload-btn');
+    const jdFileName = document.getElementById('jd-file-name');
+
+    jdUploadBtn.addEventListener('click', function() {
+      document.getElementById('jd-file').click();
+    });
+    document.getElementById('jd-file').addEventListener('change', function() {
+      const f = this.files && this.files[0];
+      jdFileName.textContent = f ? f.name : '';
+      if (f) jdSelect.value = '';
+    });
+
+    let lastMatch = { resume: '', jd: '', score: null, explanation: '' };
+    let currentJdUuid = null;
+
+    function showError(msg) {
+      errorDiv.textContent = msg;
+      errorDiv.classList.remove('hidden');
+      resultDiv.classList.add('hidden');
+    }
+
+    function showResult(score, explanation, resume, jd, jdUuid) {
+      errorDiv.classList.add('hidden');
+      scoreEl.textContent = score;
+      explanationEl.textContent = explanation;
+      resultDiv.classList.remove('hidden');
+      lastMatch = { resume: resume || '', jd: jd || '', score: score, explanation: explanation };
+      document.getElementById('recommendations').classList.add('hidden');
+      document.getElementById('recommendations-list').innerHTML = '';
+      if (jdUuid) {
+        currentJdUuid = jdUuid;
+        loadRankings(jdUuid);
+      }
+    }
+
+    async function loadSavedJds() {
+      try {
+        const r = await fetch('/api/jds');
+        const list = await r.json().catch(() => []);
+        jdSelect.innerHTML = '<option value="">-- Paste below or choose a saved JD --</option>';
+        list.forEach(jd => {
+          const opt = document.createElement('option');
+          opt.value = jd.uuid;
+          opt.textContent = jd.title || jd.uuid;
+          jdSelect.appendChild(opt);
+        });
+      } catch (e) {
+        console.warn('Failed to load saved JDs', e);
+      }
+    }
+
+    jdSelect.addEventListener('change', () => {
+      const val = jdSelect.value;
+      if (val) {
+        jdViewLink.classList.remove('hidden');
+        jdViewA.href = '/api/jds/' + val + '/file';
+        jdInput.required = false;
+        saveJdCheckbox.checked = false;
+        currentJdUuid = val;
+        loadRankings(val);
+      } else {
+        jdViewLink.classList.add('hidden');
+        jdViewA.href = '#';
+        jdInput.required = true;
+        rankingsSection.classList.add('hidden');
+        currentJdUuid = null;
+      }
+    });
+
+    async function loadRankings(jdUuid) {
+      rankingsSection.classList.remove('hidden');
+      rankingsViewJdA.href = '/api/jds/' + jdUuid + '/file';
+      rankingsBody.innerHTML = '';
+      rankingsEmpty.classList.add('hidden');
+      try {
+        const r = await fetch('/api/jds/' + jdUuid + '/matches');
+        const rows = await r.json().catch(() => []);
+        if (rows.length === 0) {
+          rankingsEmpty.classList.remove('hidden');
+          return;
+        }
+        rows.forEach(row => {
+          const tr = document.createElement('tr');
+          tr.className = 'border-b border-slate-100';
+          const dateStr = row.created_at ? new Date(row.created_at).toLocaleString() : '';
+          tr.innerHTML =
+            '<td class="py-2 pr-4">' + escapeHtml(String(row.rank)) + '</td>' +
+            '<td class="py-2 pr-4">' + escapeHtml(row.resume_label || 'Resume') + '</td>' +
+            '<td class="py-2 pr-4">' + escapeHtml(String(row.score)) + '</td>' +
+            '<td class="py-2 pr-4">' + escapeHtml(dateStr) + '</td>' +
+            '<td class="py-2 pr-4 max-w-xs truncate" title="' + escapeHtml(row.explanation || '') + '">' + escapeHtml((row.explanation || '').slice(0, 80)) + (row.explanation && row.explanation.length > 80 ? '…' : '') + '</td>' +
+            '<td class="py-2"><a href="/api/resumes/' + escapeHtml(row.resume_uuid) + '/file" target="_blank" rel="noopener" class="text-slate-600 underline hover:text-slate-800">View</a></td>';
+          rankingsBody.appendChild(tr);
+        });
+      } catch (e) {
+        rankingsEmpty.textContent = 'Failed to load rankings.';
+        rankingsEmpty.classList.remove('hidden');
+      }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorDiv.classList.add('hidden');
+      resultDiv.classList.add('hidden');
+      submitBtn.disabled = true;
+
+      const jdId = jdSelect.value || null;
+      const jd = jdInput.value;
+      const jdFileInput = document.getElementById('jd-file');
+      const hasJdFile = jdFileInput && jdFileInput.files && jdFileInput.files[0];
+      if (!jdId && !jd.trim() && !hasJdFile) {
+        showError('Choose a saved JD, paste a job description, or upload a JD file.');
+        submitBtn.disabled = false;
+        return;
+      }
+
+      try {
+        const file = resumeFile.files[0];
+        if (file) {
+          const fd = new FormData();
+          fd.append('resume_file', file);
+          if (jdId) fd.append('jd_id', jdId);
+          else if (hasJdFile) fd.append('jd_file', jdFileInput.files[0]);
+          else fd.append('job_description', jd);
+          fd.append('save_jd', saveJdCheckbox.checked ? 'true' : 'false');
+          const r = await fetch('/api/match/upload', { method: 'POST', body: fd });
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) {
+            showError(data.detail || r.statusText || 'Upload failed.');
+            submitBtn.disabled = false;
+            return;
+          }
+          let jdForRec = jd || '';
+          if (data.jd_uuid) {
+            loadSavedJds();
+            try {
+              const jr = await fetch('/api/jds/' + data.jd_uuid);
+              if (jr.ok) {
+                const jdData = await jr.json();
+                jdForRec = jdData.content_text || jdForRec;
+              }
+            } catch (_) {}
+          }
+          showResult(data.score, data.explanation, (data.resume_text || '').trim(), jdForRec, data.jd_uuid || null);
+        } else {
+          const resume = resumeInput.value;
+          if (!resume.trim()) {
+            showError('Please paste resume text or upload a file.');
+            submitBtn.disabled = false;
+            return;
+          }
+          const body = {
+            resume_text: resume,
+            job_description: jdId ? '' : jd,
+            jd_id: jdId || undefined,
+            save_jd: !jdId && saveJdCheckbox.checked,
+          };
+          const r = await fetch('/api/match', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) {
+            showError(data.detail || r.statusText || 'Request failed.');
+            submitBtn.disabled = false;
+            return;
+          }
+          let jdForRec = jd || '';
+          if (jdId || data.jd_uuid) {
+            if (data.jd_uuid) loadSavedJds();
+            const uuid = data.jd_uuid || jdId;
+            try {
+              const jr = await fetch('/api/jds/' + uuid);
+              if (jr.ok) {
+                const jdData = await jr.json();
+                jdForRec = jdData.content_text || jdForRec;
+              }
+            } catch (_) {}
+          }
+          showResult(data.score, data.explanation, resume, jdForRec, data.jd_uuid || jdId || null);
+        }
+      } catch (err) {
+        showError(err.message || 'Network error.');
+      }
+      submitBtn.disabled = false;
+    });
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    const recDiv = document.getElementById('recommendations');
+    const recList = document.getElementById('recommendations-list');
+    const recLoading = document.getElementById('recommendations-loading');
+    document.getElementById('recommendations-btn').addEventListener('click', async () => {
+      if (!lastMatch.resume || !lastMatch.jd) {
+        showError('Resume and job description are required. Run a match first.');
+        return;
+      }
+      recDiv.classList.remove('hidden');
+      recList.innerHTML = '';
+      recLoading.classList.remove('hidden');
+      try {
+        const r = await fetch('/api/recommendations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            resume_text: lastMatch.resume,
+            job_description: lastMatch.jd,
+            score: lastMatch.score,
+            explanation: lastMatch.explanation
+          })
+        });
+        const data = await r.json().catch(() => ({}));
+        recLoading.classList.add('hidden');
+        if (!r.ok) {
+          const errMsg = (data.detail || r.statusText || 'Failed to load recommendations');
+          const detail = Array.isArray(errMsg) ? errMsg.join(', ') : errMsg;
+          recList.innerHTML = '<li class="text-red-600">' + escapeHtml(detail) + '</li>';
+          return;
+        }
+        (data.recommendations || []).forEach(rec => {
+          const li = document.createElement('li');
+          li.textContent = rec;
+          recList.appendChild(li);
+        });
+      } catch (err) {
+        recLoading.classList.add('hidden');
+        recList.innerHTML = '<li class="text-red-600">' + (err.message || 'Network error') + '</li>';
+      }
+    });
+
+    loadSavedJds();
+  </script>
+</body>
+</html>
